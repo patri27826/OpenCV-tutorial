@@ -15,7 +15,7 @@ python main.py
 
 ## 使用者介面
 
-![Untitled](README%20d745942a502b4a7d81138568ddc8e560/Untitled.png)
+![interface](image\1.png?raw=true "User Interface")
 
 ## 實作功能
 
@@ -30,7 +30,7 @@ python main.py
 
 ### 原理
 
-![Untitled](README%20d745942a502b4a7d81138568ddc8e560/Untitled%201.png)
+![image](image\2.png?raw=true "Image")
 
 簡單來說，就是要我們在前25個frame中，對每一個pixel計算出他們的平均跟標準差，當作我們的背景資訊，再透過計算接下來的frame的每個pixel跟我們前面計算的mean的差距是不是大於5倍的標準差，是的話就是前景，設為白，否的話就是背景，設為黑，也就是下式
 
