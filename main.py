@@ -97,7 +97,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 img_show = cv2.hconcat([frame, gray_three_channel, removebg])
             
             cv2.imshow('Video', img_show)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+            if cv2.waitKey(30) & 0xFF == ord('q'):
                 break
 
         self.vidcap.release()    
@@ -155,16 +155,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             maxLevel = 2, 
             criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))    
 
-        feature_params = dict( maxCorners = 7, 
-            qualityLevel = 0.3,
-            minDistance = 7,
-            blockSize = 7 )
-
         # Create some random colors
         color = np.random.randint(0,255,(100,3))
         ret, old_frame = self.vidcap.read()
+
         detector = cv2.SimpleBlobDetector_create(self.params)
         old_gray = cv2.cvtColor(old_frame, cv2.COLOR_BGR2GRAY)
+
+        #keypoints to Point2f
         keypoints = detector.detect(old_frame)
         p0 = cv2.KeyPoint.convert(keypoints)
         # Create a mask image for drawing purposes
@@ -179,13 +177,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 # calculate optical flow
                 p1, st, err = cv2.calcOpticalFlowPyrLK(old_gray, frame_gray, p0, None, **lk_params)
 
-                # Select good points
-                print(p1.shape)
-                good_new = p1
-                good_old = p0
-
                 # draw the tracks
-                for i,(new,old) in enumerate(zip(good_new,good_old)):
+                for i,(new,old) in enumerate(zip(p1,p0)):
                     a,b = new.ravel()
                     c,d = old.ravel()
                     mask = cv2.line(mask, (a,b),(c,d), color[i].tolist(), 2)
@@ -193,13 +186,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 img = cv2.add(frame,mask)
 
                 cv2.imshow('frame',img)
-                k = cv2.waitKey(30) & 0xff
-                if k == 27:
+                key = cv2.waitKey(30) & 0xff
+
+                if key == ord("q"):
                     break
 
                 # Now update the previous frame and previous points
                 old_gray = frame_gray.copy()
-                p0 = good_new.reshape(-1,1,2)
+                p0 = p1.reshape(-1,1,2)
             else:
                 break
 
@@ -209,44 +203,30 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         img_height,img_width = self.Q3Image.shape[:2]
         pts2 = np.float32([[0,0], [img_width,0], [img_width,img_height], [0,img_height]])
-        # 循环视频流中的帧
+
         while True:
-            # 从线程视频流中抓取帧并将其调整为最大宽度为 600 像素
             _,frame = self.vidcap.read()
             if frame is None:
                 break
-            #frame = imutils.resize(frame, width=1000)
             
-            # 检测输入帧中的 ArUco 标记
+            # dectoct all aruco markers
             (corners, ids, rejected) = cv2.aruco.detectMarkers(frame, arucoDict, parameters=arucoParams)
-            # 验证*至少*一个 ArUco 标记被检测到
+            # at least one marker
             if len(corners) > 0:
-                # 展平 ArUco ID 列表
+                # make ids [3 4 2 1] to [[3] [4] [2] [1]]
                 ids = ids.flatten()
-                # 循环检测到的 ArUCo 角
                 pts1 = np.zeros(shape=(4, 2),dtype=np.float32)
 
                 for (markerCorner, markerID) in zip(corners, ids):
-                    # 提取标记角（始终按左上角、右上角、右下角和左下角顺序返回）
+                    # 提取標記角（始終按左上角、右上角、右下角和左下角順序返回）
                     corners = markerCorner.reshape((4, 2))
                     (topLeft, topRight, bottomRight, bottomLeft) = corners
-                    # 将每个 (x, y) 坐标对转换为整数
+                    # 將每個 (x, y) 坐標對轉換為整數
                     topRight = (int(topRight[0]), int(topRight[1]))
                     bottomRight = (int(bottomRight[0]), int(bottomRight[1]))
                     bottomLeft = (int(bottomLeft[0]), int(bottomLeft[1]))
                     topLeft = (int(topLeft[0]), int(topLeft[1]))
-                    # 绘制ArUCo检测的边界框
-                    cv2.line(frame, topLeft, topRight, (0, 255, 0), 2)
-                    cv2.line(frame, topRight, bottomRight, (0, 255, 0), 2)
-                    cv2.line(frame, bottomRight, bottomLeft, (0, 255, 0), 2)
-                    cv2.line(frame, bottomLeft, topLeft, (0, 255, 0), 2)
-                    # 计算并绘制 ArUco 标记的中心 (x, y) 坐标
-                    cX = int((topLeft[0] + bottomRight[0]) / 2.0)
-                    cY = int((topLeft[1] + bottomRight[1]) / 2.0)
-                    cv2.circle(frame, (cX, cY), 4, (0, 0, 255), -1)
-                    # 在框架上绘制 ArUco 标记 ID
-                    cv2.putText(frame, str(markerID), (topLeft[0], topLeft[1] - 15),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
                     if markerID == 1:
                         pts1[0][0], pts1[0][1] = topLeft
                     elif markerID == 2:
