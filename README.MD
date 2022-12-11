@@ -48,7 +48,7 @@ self.video_label.setText("video loaded")
 簡單來說，就是要我們在前25個frame中，對每一個pixel計算出他們的平均跟標準差，當作我們的背景資訊，再透過計算接下來的frame的每個pixel跟我們前面計算的mean的差距是不是大於5倍的標準差，是的話就是前景，設為白，否的話就是背景，設為黑，也就是下式
 
 $$
-⁍
+If \space Frame(x , y) - mean > std*5 ,then \space mask(x , y) = 255
 $$
 
 $$
